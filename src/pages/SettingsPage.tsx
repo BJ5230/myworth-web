@@ -1,5 +1,5 @@
 import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined, UploadOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Space, Typography, Upload, message } from 'antd';
+import { Alert, Button, Card, Segmented, Space, Typography, Upload, message } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import type { AssetRecord, BackupPayload, CardRecord, PackageRecord, PlanRecord, VisitRecord } from '../types';
 
@@ -17,6 +17,8 @@ interface SettingsPageProps {
   replaceVisits: (records: VisitRecord[]) => Promise<void>;
   logout: () => Promise<void>;
   onBack: () => void;
+  themeMode: 'light' | 'dark';
+  onThemeModeChange: (mode: 'light' | 'dark') => void;
 }
 
 export function SettingsPage({
@@ -33,6 +35,8 @@ export function SettingsPage({
   replaceVisits,
   logout,
   onBack,
+  themeMode,
+  onThemeModeChange,
 }: SettingsPageProps) {
   function exportJson() {
     const payload: BackupPayload = {
@@ -75,7 +79,7 @@ export function SettingsPage({
 
   return (
     <section className="page">
-      <header className="page-header">
+      <header className="page-header settings-header">
         <Button shape="circle" icon={<ArrowLeftOutlined />} onClick={onBack} />
         <Typography.Title>Settings</Typography.Title>
       </header>
@@ -83,6 +87,19 @@ export function SettingsPage({
       <Card className="record-card">
         <Typography.Text type="secondary">Signed in as</Typography.Text>
         <Typography.Title level={4}>{email}</Typography.Title>
+      </Card>
+
+      <Card className="record-card">
+        <Typography.Title level={4}>Theme</Typography.Title>
+        <Segmented
+          block
+          value={themeMode}
+          options={[
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+          ]}
+          onChange={(value) => onThemeModeChange(value as 'light' | 'dark')}
+        />
       </Card>
 
       <Card className="record-card">

@@ -2,10 +2,40 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-bg: #ffffff;
+  --app-text: #050505;
+  --muted-text: rgba(5, 5, 5, 0.52);
+  --soft-text: #888888;
+  --auth-bg: #f6f7fb;
+  --card-bg: #ffffff;
+  --banner-bg: #eef0f4;
+  --banner-text: #111111;
+  --line: #eeeeee;
+  --nav-bg: rgba(255, 255, 255, 0.86);
+  --card-shadow: 0 12px 36px rgba(15, 23, 42, 0.08);
+  --nav-shadow: 0 18px 50px rgba(15, 23, 42, 0.16);
+}
+
+[data-theme='dark'] {
+  --app-bg: #070b14;
+  --app-text: #f8fafc;
+  --muted-text: rgba(248, 250, 252, 0.62);
+  --soft-text: #9ca3af;
+  --auth-bg: #070b14;
+  --card-bg: #111827;
+  --banner-bg: #1f2937;
+  --banner-text: #f8fafc;
+  --line: rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(17, 24, 39, 0.86);
+  --card-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+  --nav-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+}
+
 body {
   margin: 0;
-  background: #ffffff;
-  color: #050505;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
 .loading-screen,
@@ -14,7 +44,7 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #f6f7fb;
+  background: var(--auth-bg);
 }
 
 .auth-card {
@@ -30,7 +60,8 @@ body {
 
 .app-shell {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
 .app-content {
@@ -55,6 +86,10 @@ body {
   letter-spacing: -0.05em;
 }
 
+.settings-header {
+  justify-content: flex-start;
+}
+
 .bottom-nav {
   position: fixed;
   left: 50%;
@@ -64,8 +99,8 @@ body {
   transform: translateX(-50%);
   padding: 6px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.16);
+  background: var(--nav-bg);
+  box-shadow: var(--nav-shadow);
   backdrop-filter: blur(18px);
 }
 
@@ -81,6 +116,7 @@ body {
   display: grid;
   gap: 3px;
   place-items: center;
+  padding-top: 6px;
   font-size: 11px;
 }
 
@@ -143,6 +179,7 @@ body {
 .record-card small {
   margin: 4px 0 0;
   color: rgba(5, 5, 5, 0.52);
+  color: var(--muted-text);
 }
 
 .gradient-record p,
@@ -155,8 +192,8 @@ body {
   margin: 0 0 14px;
   border: 0;
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
 }
 
 .record-card .ant-card-body,
@@ -205,8 +242,8 @@ body {
 .shop-banner {
   margin: 18px -18px 12px;
   padding: 14px 18px;
-  background: #eef0f4;
-  color: #111111;
+  background: var(--banner-bg);
+  color: var(--banner-text);
   font-weight: 800;
   font-size: 20px;
 }
@@ -223,12 +260,12 @@ body {
   overflow: hidden;
   margin-bottom: 18px;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .active-total {
   padding: 14px 0;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid var(--line);
 }
 
 .list-button {
@@ -239,16 +276,17 @@ body {
   gap: 16px;
   padding: 16px 0;
   border: 0;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid var(--line);
   background: transparent;
   text-align: left;
   font: inherit;
+  color: var(--app-text);
 }
 
 .list-button small {
   display: block;
   margin-top: 3px;
-  color: #888888;
+  color: var(--soft-text);
 }
 
 .danger-button {
@@ -272,6 +310,17 @@ body {
 .empty-state p {
   max-width: 280px;
   margin: 8px auto 0;
-  color: #8c8c8c;
+  color: var(--soft-text);
   font-size: 16px;
+}
+
+[data-theme='dark'] .ant-layout,
+[data-theme='dark'] .ant-modal-content,
+[data-theme='dark'] .ant-modal-header {
+  background: var(--app-bg);
+}
+
+[data-theme='dark'] .ant-card,
+[data-theme='dark'] .ant-modal-content {
+  color: var(--app-text);
 }

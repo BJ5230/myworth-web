@@ -1,5 +1,5 @@
-import { ConfigProvider, Spin } from 'antd';
-import { useState } from 'react';
+import { ConfigProvider, Spin, theme } from 'antd';
+import { useEffect, useState } from 'react';
 import { AppShell, type TabKey } from './components/AppShell';
 import { isFirebaseConfigured } from './firebase';
 import { useAuth } from './hooks/useAuth';
@@ -13,12 +13,25 @@ import { PlansPage } from './pages/PlansPage';
 import { SettingsPage } from './pages/SettingsPage';
 import type { AssetRecord, CardRecord, PackageRecord, PlanRecord, VisitRecord } from './types';
 
+type ThemeMode = 'light' | 'dark';
+const themeStorageKey = 'myworth-theme-mode';
+
+function readThemeMode(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  return window.localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light';
+}
+
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [showSettings, setShowSettings] = useState(false);
   const [valuesHidden, setValuesHidden] = useState(false);
   const [showDashboardDetails, setShowDashboardDetails] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode);
+
+  useEffect(() => {
+    window.localStorage.setItem(themeStorageKey, themeMode);
+  }, [themeMode]);
 
   const assets = useUserCollection<AssetRecord>(user?.uid, 'assets');
   const cards = useUserCollection<CardRecord>(user?.uid, 'cards');
@@ -37,13 +50,17 @@ export default function App() {
   return (
     <ConfigProvider
       theme={{
+        algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: '#1769e8',
           borderRadius: 10,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          colorBgLayout: themeMode === 'dark' ? '#070b14' : '#ffffff',
+          colorBgContainer: themeMode === 'dark' ? '#111827' : '#ffffff',
         },
       }}
     >
+      <div data-theme={themeMode}>
       {!user || !isFirebaseConfigured ? (
         <AuthPage />
       ) : (
@@ -63,6 +80,8 @@ export default function App() {
               replaceVisits={visits.replaceAll}
               logout={logout}
               onBack={() => setShowSettings(false)}
+              themeMode={themeMode}
+              onThemeModeChange={setThemeMode}
             />
           ) : activeTab === 'dashboard' ? (
             <DashboardPage
@@ -113,6 +132,7 @@ export default function App() {
           )}
         </AppShell>
       )}
+      </div>
     </ConfigProvider>
   );
 }
