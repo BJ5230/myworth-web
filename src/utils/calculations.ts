@@ -1,0 +1,83 @@
+import type { AssetRecord, CardRecord, PackageRecord, PlanRecord, RecurringItem, VisitRecord } from '../types';
+import { todayMonthKey } from './format';
+
+export function monthsBetween(startMonth: string, currentMonth = todayMonthKey()): number {
+  const [startYear, start] = startMonth.split('-').map(Number);
+  const [currentYear, current] = currentMonth.split('-').map(Number);
+  if (!startYear || !start || !currentYear || !current) return 0;
+  return (currentYear - startYear) * 12 + (current - start);
+}
+
+function recurringRawProgress(item: RecurringItem, currentMonth = todayMonthKey()): number {
+  return item.startInstallment + monthsBetween(item.startMonth, currentMonth);
+}
+
+export function recurringProgress(item: RecurringItem, currentMonth = todayMonthKey()): number {
+  const progress = recurringRawProgress(item, currentMonth);
+  return Math.min(Math.max(progress, 1), item.totalInstallments);
+}
+
+export function recurringLeft(item: RecurringItem, currentMonth = todayMonthKey()): number {
+  return Math.max(item.totalInstallments - recurringProgress(item, currentMonth), 0);
+}
+
+export function isRecurringActive(item: RecurringItem, currentMonth = todayMonthKey()): boolean {
+  const rawProgress = recurringRawProgress(item, currentMonth);
+  return item.totalInstallments > 0 && rawProgress >= 1 && rawProgress <= item.totalInstallments;
+}
+
+export function cardOutstanding(card: CardRecord, currentMonth = todayMonthKey()): number {
+  return card.recurringItems
+    .filter((item) => isRecurringActive(item, currentMonth))
+    .reduce((total, item) => total + item.monthlyAmount, 0);
+}
+
+export function totalCardOutstanding(cards: CardRecord[], currentMonth = todayMonthKey()): number {
+  return cards.reduce((total, card) => total + cardOutstanding(card, currentMonth), 0);
+}
+
+export function totalAssets(assets: AssetRecord[]): number {
+  return assets.reduce((total, asset) => total + asset.amount, 0);
+}
+
+export function totalPlans(plans: PlanRecord[]): number {
+  return plans.reduce((total, plan) => total + plan.amount, 0);
+}
+
+export function dashboardTotals(
+  assets: AssetRecord[],
+  cards: CardRecord[],
+  plans: PlanRecord[],
+  currentMonth = todayMonthKey(),
+) {
+  const assetsTotal = totalAssets(assets);
+  const cardsTotal = totalCardOutstanding(cards, currentMonth);
+  const plansTotal = totalPlans(plans);
+
+  return {
+    assetsTotal,
+    cardsTotal,
+    plansTotal,
+    afterCards: assetsTotal - cardsTotal,
+    afterPlans: assetsTotal - cardsTotal - plansTotal,
+  };
+}
+
+export function usedPackageSessions(packageId: string, visits: VisitRecord[]): number {
+  return visits.filter((visit) => visit.packageId === packageId).length;
+}
+
+export function packageRemaining(pkg: PackageRecord, visits: VisitRecord[]): number {
+  return Math.max(pkg.totalSessions - usedPackageSessions(pkg.id, visits), 0);
+}
+
+export function groupByShop<T extends { shopName: string }>(items: T[]): Record<string, T[]> {
+  return items
+    .slice()
+    .sort((a, b) => a.shopName.localeCompare(b.shopName) || JSON.stringify(a).localeCompare(JSON.stringify(b)))
+    .reduce<Record<string, T[]>>((groups, item) => {
+      const shop = item.shopName || 'Unknown Shop';
+      groups[shop] = [...(groups[shop] ?? []), item];
+      return groups;
+    }, {});
+}
