@@ -62,10 +62,10 @@ describe('MyWorth calculations', () => {
       totalSessions: 15,
     };
     const visits: VisitRecord[] = [
-      { id: 'visit-1', packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial'], visitedAt: '2026-07-01' },
-      { id: 'visit-2', packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial'], visitedAt: '2026-07-08' },
+      { id: 'visit-1', usages: [{ packageId: 'pkg-1', quantity: 2 }], packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial x2'], visitedAt: '2026-07-01' },
+      { id: 'visit-2', usages: [{ packageId: 'pkg-1', quantity: 1 }], packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial'], visitedAt: '2026-07-08' },
     ];
 
-    expect(packageRemaining(pkg, visits)).toBe(13);
+    expect(packageRemaining(pkg, visits)).toBe(12);
   });
 });

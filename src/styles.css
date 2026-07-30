@@ -294,6 +294,12 @@ body {
   background: #ff3b45;
 }
 
+.two-column-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .empty-state {
   display: grid;
   min-height: 48vh;

@@ -28,8 +28,9 @@ interface PackageFormValues {
 }
 
 interface VisitFormValues {
-  packageIds: string[];
-  visitedAt: dayjs.Dayjs;
+  usageQuantities: Record<string, number>;
+  visitDate: dayjs.Dayjs;
+  visitTime: string;
   staff?: string;
   note?: string;
 }
@@ -45,12 +46,18 @@ export function PackagesPage({
   deleteVisit,
 }: PackagesPageProps) {
   const [tab, setTab] = useState<'packages' | 'visits'>('packages');
+  const [packageSort, setPackageSort] = useState<'shop' | 'remaining' | 'total'>('shop');
   const [editingPackage, setEditingPackage] = useState<PackageRecord | null>(null);
   const [editingVisit, setEditingVisit] = useState<VisitRecord | null>(null);
   const [packageForm] = Form.useForm<PackageFormValues>();
   const [visitForm] = Form.useForm<VisitFormValues>();
 
-  const packageGroups = groupByShop(packages);
+  const sortedPackages = packages.slice().sort((a, b) => {
+    if (packageSort === 'remaining') return packageRemaining(b, visits) - packageRemaining(a, visits) || a.title.localeCompare(b.title);
+    if (packageSort === 'total') return b.totalSessions - a.totalSessions || a.title.localeCompare(b.title);
+    return a.shopName.localeCompare(b.shopName) || a.title.localeCompare(b.title);
+  });
+  const packageGroups = groupByShop(sortedPackages);
   const visitGroups = groupByShop(visits);
 
   function openPackageForm(pkg?: PackageRecord) {
@@ -72,27 +79,64 @@ export function PackagesPage({
   }
 
   function openVisitForm(visit?: VisitRecord) {
-    setEditingVisit(visit ?? ({ id: '', packageIds: [], shopName: '', packageTitles: [], visitedAt: dayjs().format('YYYY-MM-DDTHH:mm'), staff: '', note: '' } as VisitRecord));
-    visitForm.setFieldsValue(
-      visit
-        ? { packageIds: visit.packageIds ?? [], visitedAt: dayjs(visit.visitedAt), staff: visit.staff, note: visit.note }
-        : { packageIds: [], visitedAt: dayjs(), staff: '', note: '' },
-    );
+    const now = dayjs();
+    const usageQuantities =
+      visit?.usages?.reduce<Record<string, number>>((values, usage) => {
+        values[usage.packageId] = usage.quantity;
+        return values;
+      }, {}) ??
+      visit?.packageIds?.reduce<Record<string, number>>((values, id) => {
+        values[id] = (values[id] ?? 0) + 1;
+        return values;
+      }, {}) ??
+      {};
+    const visitedAt = visit ? dayjs(visit.visitedAt) : now;
+    setEditingVisit(visit ?? ({ id: '', usages: [], packageIds: [], shopName: '', packageTitles: [], visitedAt: now.toISOString(), staff: '', note: '' } as VisitRecord));
+    visitForm.resetFields();
+    visitForm.setFieldsValue({
+      usageQuantities,
+      visitDate: visitedAt,
+      visitTime: visitedAt.format('HH:mm'),
+      staff: visit?.staff ?? '',
+      note: visit?.note ?? '',
+    });
   }
 
   async function submitVisit(values: VisitFormValues) {
-    const selected = packages.filter((pkg) => values.packageIds.includes(pkg.id));
+    const usageQuantities = values.usageQuantities ?? {};
+    const usages = Object.entries(usageQuantities)
+      .map(([packageId, quantity]) => ({ packageId, quantity: Math.max(0, toNumber(quantity)) }))
+      .filter((usage) => usage.quantity > 0);
+    const selected = packages.filter((pkg) => usages.some((usage) => usage.packageId === pkg.id));
     const shopNames = Array.from(new Set(selected.map((pkg) => pkg.shopName))).sort();
+    const [hour, minute] = (values.visitTime || '00:00').split(':').map(Number);
+    const selectedAt = values.visitDate
+      .hour(Number.isFinite(hour) ? hour : 0)
+      .minute(Number.isFinite(minute) ? minute : 0)
+      .second(0)
+      .millisecond(0);
     const payload = {
+      usages,
       packageIds: selected.map((pkg) => pkg.id),
       shopName: shopNames.length > 0 ? shopNames.join(' & ') : 'Unknown Shop',
-      packageTitles: selected.map((pkg) => pkg.title).sort(),
-      visitedAt: values.visitedAt.toISOString(),
+      packageTitles: selected
+        .map((pkg) => {
+          const quantity = usages.find((usage) => usage.packageId === pkg.id)?.quantity ?? 1;
+          return quantity > 1 ? `${pkg.title} x${quantity}` : pkg.title;
+        })
+        .sort(),
+      visitedAt: selectedAt.toISOString(),
       staff: values.staff,
       note: values.note,
     };
     if (editingVisit?.id) await updateVisit(editingVisit.id, payload);
     else await createVisit(payload);
+    visitForm.resetFields();
+    setEditingVisit(null);
+  }
+
+  function closeVisitForm() {
+    visitForm.resetFields();
     setEditingVisit(null);
   }
 
@@ -101,7 +145,19 @@ export function PackagesPage({
       <header className="page-header">
         <Typography.Title>Packages</Typography.Title>
         <Space>
-          <Button icon={<SortAscendingOutlined />}>Shop</Button>
+          {tab === 'packages' && (
+            <Select
+              value={packageSort}
+              suffixIcon={<SortAscendingOutlined />}
+              style={{ width: 132 }}
+              options={[
+                { value: 'shop', label: 'Shop' },
+                { value: 'remaining', label: 'Remaining' },
+                { value: 'total', label: 'Total' },
+              ]}
+              onChange={setPackageSort}
+            />
+          )}
           <Button type="primary" shape="circle" icon={<PlusOutlined />} onClick={() => (tab === 'packages' ? openPackageForm() : openVisitForm())} />
         </Space>
       </header>
@@ -128,10 +184,6 @@ export function PackagesPage({
                   <div className="split-row">
                     <div>
                       <strong>{pkg.title}</strong>
-                      <p>
-                        {pkg.shopName} · {pkg.category ?? 'Beauty'}
-                      </p>
-                      <small>{packageRemaining(pkg, visits)} of {pkg.totalSessions} remaining</small>
                     </div>
                     <strong>
                       {packageRemaining(pkg, visits)}/{pkg.totalSessions}
@@ -195,22 +247,37 @@ export function PackagesPage({
         </Form>
       </Modal>
 
-      <Modal title={editingVisit?.id ? 'Edit Visit' : 'Add Visit'} open={!!editingVisit} onCancel={() => setEditingVisit(null)} footer={null} destroyOnClose>
+      <Modal title={editingVisit?.id ? 'Edit Visit' : 'Add Visit'} open={!!editingVisit} onCancel={closeVisitForm} footer={null} destroyOnClose>
         <Form form={visitForm} layout="vertical" onFinish={submitVisit}>
-          <Form.Item label="Treatments" name="packageIds" rules={[{ required: true, type: 'array', min: 1 }]}>
-            <Select
-              mode="multiple"
-              placeholder="Select package treatments"
-              options={packages.map((pkg) => ({
-                value: pkg.id,
-                label: `${pkg.shopName} · ${pkg.title} (${packageRemaining(pkg, visits)} left)`,
-                disabled: packageRemaining(pkg, visits) === 0 && !(editingVisit?.packageIds ?? []).includes(pkg.id),
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="Visit Date & Time" name="visitedAt" rules={[{ required: true }]}>
-            <DatePicker showTime style={{ width: '100%' }} />
-          </Form.Item>
+          <Typography.Title level={5}>Treatments</Typography.Title>
+          {packages.map((pkg) => {
+            const existingQuantity = editingVisit?.usages?.find((usage) => usage.packageId === pkg.id)?.quantity ?? 0;
+            const maxQuantity = packageRemaining(pkg, visits) + existingQuantity;
+            return (
+              <Form.Item
+                key={pkg.id}
+                label={`${pkg.shopName} · ${pkg.title} (${maxQuantity} left)`}
+                name={['usageQuantities', pkg.id]}
+              >
+                <InputNumber min={0} max={maxQuantity} precision={0} style={{ width: '100%' }} />
+              </Form.Item>
+            );
+          })}
+          <div className="two-column-fields">
+            <Form.Item label="Visit Date" name="visitDate" rules={[{ required: true }]}>
+              <DatePicker style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item
+              label="Visit Time"
+              name="visitTime"
+              rules={[
+                { required: true },
+                { pattern: /^([01]\d|2[0-3]):[0-5]\d$/, message: 'Use 24-hour time, eg 14:30' },
+              ]}
+            >
+              <Input placeholder="14:30" inputMode="numeric" />
+            </Form.Item>
+          </div>
           <Form.Item label="Staff Member" name="staff">
             <Input placeholder="Optional" />
           </Form.Item>

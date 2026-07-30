@@ -68,7 +68,12 @@ export function dashboardTotals(
 }
 
 export function usedPackageSessions(packageId: string, visits: VisitRecord[]): number {
-  return visits.filter((visit) => visit.packageIds?.includes(packageId)).length;
+  return visits.reduce((total, visit) => {
+    if (visit.usages) {
+      return total + visit.usages.filter((usage) => usage.packageId === packageId).reduce((sum, usage) => sum + usage.quantity, 0);
+    }
+    return total + (visit.packageIds?.filter((id) => id === packageId).length ?? 0);
+  }, 0);
 }
 
 export function packageRemaining(pkg: PackageRecord, visits: VisitRecord[]): number {

@@ -58,6 +58,7 @@ export interface PackageRecord extends BaseRecord {
 }
 
 export interface VisitRecord extends BaseRecord {
+  usages?: Array<{ packageId: string; quantity: number }>;
   packageIds: string[];
   shopName: string;
   packageTitles: string[];
