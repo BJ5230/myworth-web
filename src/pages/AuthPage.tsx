@@ -41,7 +41,7 @@ export function AuthPage() {
             type="warning"
             showIcon
             message="Firebase setup needed"
-            description="Create .env from .env.example and paste your Firebase web config before login will work."
+            description="For local run, create .env from .env.example. For the deployed website, add the same VITE_FIREBASE_* values as GitHub Actions secrets, then push again."
           />
         )}
 
