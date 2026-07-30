@@ -4,12 +4,11 @@ import {
   CreditCardOutlined,
   DashboardOutlined,
   GiftOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import { Layout, Segmented } from 'antd';
 import type { ReactNode } from 'react';
 
-export type TabKey = 'dashboard' | 'assets' | 'cards' | 'plans' | 'packages' | 'settings';
+export type TabKey = 'dashboard' | 'assets' | 'cards' | 'plans' | 'packages';
 
 interface AppShellProps {
   activeTab: TabKey;
@@ -23,7 +22,6 @@ const tabs = [
   { value: 'cards', label: 'Cards', icon: <CreditCardOutlined /> },
   { value: 'plans', label: 'Plans', icon: <CalendarOutlined /> },
   { value: 'packages', label: 'Packages', icon: <GiftOutlined /> },
-  { value: 'settings', label: 'Settings', icon: <SettingOutlined /> },
 ];
 
 export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {

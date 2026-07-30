@@ -22,6 +22,8 @@ export function recurringLeft(item: RecurringItem, currentMonth = todayMonthKey(
 }
 
 export function isRecurringActive(item: RecurringItem, currentMonth = todayMonthKey()): boolean {
+  if (item.isPaused) return false;
+  if (item.isOngoing) return true;
   const rawProgress = recurringRawProgress(item, currentMonth);
   return item.totalInstallments > 0 && rawProgress >= 1 && rawProgress <= item.totalInstallments;
 }
@@ -41,7 +43,9 @@ export function totalAssets(assets: AssetRecord[]): number {
 }
 
 export function totalPlans(plans: PlanRecord[]): number {
-  return plans.reduce((total, plan) => total + plan.amount, 0);
+  return plans
+    .filter((plan) => plan.status === undefined || plan.status === 'Planning' || plan.status === 'Active')
+    .reduce((total, plan) => total + Math.max(plan.budget - (plan.spent ?? 0), 0), 0);
 }
 
 export function dashboardTotals(
@@ -64,7 +68,7 @@ export function dashboardTotals(
 }
 
 export function usedPackageSessions(packageId: string, visits: VisitRecord[]): number {
-  return visits.filter((visit) => visit.packageId === packageId).length;
+  return visits.filter((visit) => visit.packageIds?.includes(packageId)).length;
 }
 
 export function packageRemaining(pkg: PackageRecord, visits: VisitRecord[]): number {

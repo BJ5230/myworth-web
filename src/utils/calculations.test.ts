@@ -45,13 +45,13 @@ describe('MyWorth calculations', () => {
           ],
         },
       ],
-      [{ id: 'plan-1', name: 'Travel', category: 'Travel', amount: 300 }],
+      [{ id: 'plan-1', name: 'Travel', category: 'Travel', budget: 300, spent: 50, status: 'Planning' }],
       '2026-07',
     );
 
     expect(totals.assetsTotal).toBe(1000);
     expect(totals.afterCards).toBe(800);
-    expect(totals.afterPlans).toBe(500);
+    expect(totals.afterPlans).toBe(550);
   });
 
   it('calculates package remaining from visit history', () => {
@@ -62,8 +62,8 @@ describe('MyWorth calculations', () => {
       totalSessions: 15,
     };
     const visits: VisitRecord[] = [
-      { id: 'visit-1', packageId: 'pkg-1', shopName: 'Beauty Shop', packageTitle: 'Aqua Facial', visitedAt: '2026-07-01' },
-      { id: 'visit-2', packageId: 'pkg-1', shopName: 'Beauty Shop', packageTitle: 'Aqua Facial', visitedAt: '2026-07-08' },
+      { id: 'visit-1', packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial'], visitedAt: '2026-07-01' },
+      { id: 'visit-2', packageIds: ['pkg-1'], shopName: 'Beauty Shop', packageTitles: ['Aqua Facial'], visitedAt: '2026-07-08' },
     ];
 
     expect(packageRemaining(pkg, visits)).toBe(13);

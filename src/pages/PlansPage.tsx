@@ -19,8 +19,11 @@ interface PlansPageProps {
 interface PlanFormValues {
   name: string;
   category: string;
-  amount: number;
+  budget: number;
+  spent?: number;
+  status: 'Planning' | 'Active' | 'Done' | 'Paused';
   targetDate?: dayjs.Dayjs;
+  notes?: string;
 }
 
 export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deletePlan }: PlansPageProps) {
@@ -30,9 +33,11 @@ export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deleteP
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm<PlanFormValues>();
 
-  const sorted = plans.slice().sort((a, b) => {
+    const sorted = plans.slice().sort((a, b) => {
     if (sort === 'name') return direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-    return direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+    const aRemaining = Math.max(a.budget - (a.spent ?? 0), 0);
+    const bRemaining = Math.max(b.budget - (b.spent ?? 0), 0);
+    return direction === 'asc' ? aRemaining - bRemaining : bRemaining - aRemaining;
   });
 
   function openForm(plan?: PlanRecord) {
@@ -40,7 +45,7 @@ export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deleteP
     form.setFieldsValue(
       plan
         ? { ...plan, targetDate: plan.targetDate ? dayjs(plan.targetDate) : undefined }
-        : { name: '', category: 'House', amount: 0 },
+        : { name: '', category: 'House', budget: 0, spent: 0, status: 'Planning', notes: '' },
     );
     setOpen(true);
   }
@@ -49,8 +54,11 @@ export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deleteP
     const payload = {
       name: toPascalWords(values.name),
       category: toPascalWords(values.category),
-      amount: toNumber(values.amount),
+      budget: toNumber(values.budget),
+      spent: toNumber(values.spent),
+      status: values.status,
       targetDate: values.targetDate?.format('YYYY-MM-DD'),
+      notes: values.notes,
     };
     if (editing) await updatePlan(editing.id, payload);
     else await createPlan(payload);
@@ -86,10 +94,14 @@ export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deleteP
             <div className="split-row">
               <div>
                 <strong>{plan.name}</strong>
-                <p>{plan.category}{plan.targetDate ? ` · ${plan.targetDate}` : ''}</p>
+                <p>
+                  {plan.category} · {plan.status ?? 'Planning'}
+                  {plan.targetDate ? ` · ${plan.targetDate}` : ''}
+                </p>
+                <small>Spent <MoneyText value={plan.spent ?? 0} hidden={valuesHidden} /></small>
               </div>
               <strong>
-                <MoneyText value={plan.amount} hidden={valuesHidden} />
+                <MoneyText value={Math.max(plan.budget - (plan.spent ?? 0), 0)} hidden={valuesHidden} />
               </strong>
             </div>
           </Card>
@@ -104,11 +116,20 @@ export function PlansPage({ plans, valuesHidden, createPlan, updatePlan, deleteP
           <Form.Item label="Category" name="category" rules={[{ required: true }]}>
             <Input placeholder="House" />
           </Form.Item>
-          <Form.Item label="Amount" name="amount" rules={[{ required: true }]}>
+          <Form.Item label="Budget" name="budget" rules={[{ required: true }]}>
             <InputNumber min={0} precision={2} prefix="RM" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Spent" name="spent">
+            <InputNumber min={0} precision={2} prefix="RM" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Status" name="status" rules={[{ required: true }]}>
+            <Select options={['Planning', 'Active', 'Done', 'Paused'].map((value) => ({ value, label: value }))} />
           </Form.Item>
           <Form.Item label="Target Date" name="targetDate">
             <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea placeholder="Optional" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block size="large">
             Save

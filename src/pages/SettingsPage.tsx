@@ -1,4 +1,4 @@
-import { DownloadOutlined, LogoutOutlined, UploadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined, UploadOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Space, Typography, Upload, message } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import type { AssetRecord, BackupPayload, CardRecord, PackageRecord, PlanRecord, VisitRecord } from '../types';
@@ -16,6 +16,7 @@ interface SettingsPageProps {
   replacePackages: (records: PackageRecord[]) => Promise<void>;
   replaceVisits: (records: VisitRecord[]) => Promise<void>;
   logout: () => Promise<void>;
+  onBack: () => void;
 }
 
 export function SettingsPage({
@@ -31,6 +32,7 @@ export function SettingsPage({
   replacePackages,
   replaceVisits,
   logout,
+  onBack,
 }: SettingsPageProps) {
   function exportJson() {
     const payload: BackupPayload = {
@@ -74,6 +76,7 @@ export function SettingsPage({
   return (
     <section className="page">
       <header className="page-header">
+        <Button shape="circle" icon={<ArrowLeftOutlined />} onClick={onBack} />
         <Typography.Title>Settings</Typography.Title>
       </header>
 

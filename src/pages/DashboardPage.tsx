@@ -1,4 +1,4 @@
-import { DownOutlined, EyeInvisibleOutlined, EyeOutlined, UpOutlined } from '@ant-design/icons';
+import { DownOutlined, EyeInvisibleOutlined, EyeOutlined, SettingOutlined, UpOutlined } from '@ant-design/icons';
 import { Button, Card, Space, Typography } from 'antd';
 import type { AssetRecord, CardRecord, PlanRecord } from '../types';
 import { MoneyText } from '../components/MoneyText';
@@ -12,6 +12,7 @@ interface DashboardPageProps {
   showDetails: boolean;
   onToggleValues: () => void;
   onToggleDetails: () => void;
+  onOpenSettings: () => void;
 }
 
 export function DashboardPage({
@@ -22,12 +23,16 @@ export function DashboardPage({
   showDetails,
   onToggleValues,
   onToggleDetails,
+  onOpenSettings,
 }: DashboardPageProps) {
   const totals = dashboardTotals(assets, cards, plans);
   const cardRows = cards
     .map((card) => ({ label: card.issuer, amount: cardOutstanding(card) }))
     .filter((row) => row.amount > 0);
-  const planRows = plans.filter((plan) => plan.amount > 0);
+  const planRows = plans
+    .filter((plan) => plan.status === undefined || plan.status === 'Planning' || plan.status === 'Active')
+    .map((plan) => ({ ...plan, remaining: Math.max(plan.budget - (plan.spent ?? 0), 0) }))
+    .filter((plan) => plan.remaining > 0);
 
   return (
     <section className="page">
@@ -36,6 +41,7 @@ export function DashboardPage({
         <Space>
           <Button shape="circle" icon={valuesHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={onToggleValues} />
           <Button shape="circle" icon={showDetails ? <UpOutlined /> : <DownOutlined />} onClick={onToggleDetails} />
+          <Button shape="circle" icon={<SettingOutlined />} onClick={onOpenSettings} />
         </Space>
       </header>
 
@@ -78,7 +84,7 @@ export function DashboardPage({
                 <div className="split-row" key={plan.id}>
                   <span>{plan.name}</span>
                   <strong>
-                    <MoneyText value={plan.amount} hidden={valuesHidden} />
+                    <MoneyText value={plan.remaining} hidden={valuesHidden} />
                   </strong>
                 </div>
               ))}

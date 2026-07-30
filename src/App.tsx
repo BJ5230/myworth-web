@@ -16,6 +16,7 @@ import type { AssetRecord, CardRecord, PackageRecord, PlanRecord, VisitRecord } 
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
+  const [showSettings, setShowSettings] = useState(false);
   const [valuesHidden, setValuesHidden] = useState(false);
   const [showDashboardDetails, setShowDashboardDetails] = useState(false);
 
@@ -47,57 +48,7 @@ export default function App() {
         <AuthPage />
       ) : (
         <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
-          {activeTab === 'dashboard' && (
-            <DashboardPage
-              assets={assets.items}
-              cards={cards.items}
-              plans={plans.items}
-              valuesHidden={valuesHidden}
-              showDetails={showDashboardDetails}
-              onToggleValues={() => setValuesHidden((value) => !value)}
-              onToggleDetails={() => setShowDashboardDetails((value) => !value)}
-            />
-          )}
-          {activeTab === 'assets' && (
-            <AssetsPage
-              assets={assets.items}
-              valuesHidden={valuesHidden}
-              createAsset={assets.create}
-              updateAsset={assets.update}
-              deleteAsset={assets.remove}
-            />
-          )}
-          {activeTab === 'cards' && (
-            <CardsPage
-              cards={cards.items}
-              valuesHidden={valuesHidden}
-              createCard={cards.create}
-              updateCard={cards.update}
-              deleteCard={cards.remove}
-            />
-          )}
-          {activeTab === 'plans' && (
-            <PlansPage
-              plans={plans.items}
-              valuesHidden={valuesHidden}
-              createPlan={plans.create}
-              updatePlan={plans.update}
-              deletePlan={plans.remove}
-            />
-          )}
-          {activeTab === 'packages' && (
-            <PackagesPage
-              packages={packages.items}
-              visits={visits.items}
-              createPackage={packages.create}
-              updatePackage={packages.update}
-              deletePackage={packages.remove}
-              createVisit={visits.create}
-              updateVisit={visits.update}
-              deleteVisit={visits.remove}
-            />
-          )}
-          {activeTab === 'settings' && (
+          {showSettings ? (
             <SettingsPage
               email={user.email}
               assets={assets.items}
@@ -111,6 +62,53 @@ export default function App() {
               replacePackages={packages.replaceAll}
               replaceVisits={visits.replaceAll}
               logout={logout}
+              onBack={() => setShowSettings(false)}
+            />
+          ) : activeTab === 'dashboard' ? (
+            <DashboardPage
+              assets={assets.items}
+              cards={cards.items}
+              plans={plans.items}
+              valuesHidden={valuesHidden}
+              showDetails={showDashboardDetails}
+              onToggleValues={() => setValuesHidden((value) => !value)}
+              onToggleDetails={() => setShowDashboardDetails((value) => !value)}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+          ) : activeTab === 'assets' ? (
+            <AssetsPage
+              assets={assets.items}
+              valuesHidden={valuesHidden}
+              createAsset={assets.create}
+              updateAsset={assets.update}
+              deleteAsset={assets.remove}
+            />
+          ) : activeTab === 'cards' ? (
+            <CardsPage
+              cards={cards.items}
+              valuesHidden={valuesHidden}
+              createCard={cards.create}
+              updateCard={cards.update}
+              deleteCard={cards.remove}
+            />
+          ) : activeTab === 'plans' ? (
+            <PlansPage
+              plans={plans.items}
+              valuesHidden={valuesHidden}
+              createPlan={plans.create}
+              updatePlan={plans.update}
+              deletePlan={plans.remove}
+            />
+          ) : (
+            <PackagesPage
+              packages={packages.items}
+              visits={visits.items}
+              createPackage={packages.create}
+              updatePackage={packages.update}
+              deletePackage={packages.remove}
+              createVisit={visits.create}
+              updateVisit={visits.update}
+              deleteVisit={visits.remove}
             />
           )}
         </AppShell>

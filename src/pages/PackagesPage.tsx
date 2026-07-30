@@ -1,5 +1,5 @@
 import { PlusOutlined, SortAscendingOutlined } from '@ant-design/icons';
-import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Segmented, Space, Typography } from 'antd';
+import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Segmented, Select, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
@@ -21,14 +21,16 @@ interface PackagesPageProps {
 
 interface PackageFormValues {
   shopName: string;
+  category: 'Beauty' | 'Gym' | 'Medical' | 'Car Wash' | 'Other';
   title: string;
   totalSessions: number;
+  notes?: string;
 }
 
 interface VisitFormValues {
-  shopName: string;
-  packageTitle: string;
+  packageIds: string[];
   visitedAt: dayjs.Dayjs;
+  staff?: string;
   note?: string;
 }
 
@@ -52,15 +54,17 @@ export function PackagesPage({
   const visitGroups = groupByShop(visits);
 
   function openPackageForm(pkg?: PackageRecord) {
-    setEditingPackage(pkg ?? ({ id: '', shopName: '', title: '', totalSessions: 1 } as PackageRecord));
-    packageForm.setFieldsValue(pkg ?? { shopName: '', title: '', totalSessions: 1 });
+    setEditingPackage(pkg ?? ({ id: '', shopName: '', category: 'Beauty', title: '', totalSessions: 1, notes: '' } as PackageRecord));
+    packageForm.setFieldsValue(pkg ?? { shopName: 'Beauty Shop', category: 'Beauty', title: '', totalSessions: 1, notes: '' });
   }
 
   async function submitPackage(values: PackageFormValues) {
     const payload = {
       shopName: toPascalWords(values.shopName),
+      category: values.category,
       title: toPascalWords(values.title),
       totalSessions: toNumber(values.totalSessions),
+      notes: values.notes,
     };
     if (editingPackage?.id) await updatePackage(editingPackage.id, payload);
     else await createPackage(payload);
@@ -68,23 +72,23 @@ export function PackagesPage({
   }
 
   function openVisitForm(visit?: VisitRecord) {
-    setEditingVisit(visit ?? ({ id: '', packageId: '', shopName: '', packageTitle: '', visitedAt: dayjs().format('YYYY-MM-DDTHH:mm') } as VisitRecord));
+    setEditingVisit(visit ?? ({ id: '', packageIds: [], shopName: '', packageTitles: [], visitedAt: dayjs().format('YYYY-MM-DDTHH:mm'), staff: '', note: '' } as VisitRecord));
     visitForm.setFieldsValue(
       visit
-        ? { ...visit, visitedAt: dayjs(visit.visitedAt) }
-        : { shopName: '', packageTitle: '', visitedAt: dayjs(), note: '' },
+        ? { packageIds: visit.packageIds ?? [], visitedAt: dayjs(visit.visitedAt), staff: visit.staff, note: visit.note }
+        : { packageIds: [], visitedAt: dayjs(), staff: '', note: '' },
     );
   }
 
   async function submitVisit(values: VisitFormValues) {
-    const shopName = toPascalWords(values.shopName);
-    const packageTitle = toPascalWords(values.packageTitle);
-    const matched = packages.find((pkg) => pkg.shopName === shopName && pkg.title === packageTitle);
+    const selected = packages.filter((pkg) => values.packageIds.includes(pkg.id));
+    const shopNames = Array.from(new Set(selected.map((pkg) => pkg.shopName))).sort();
     const payload = {
-      packageId: matched?.id ?? editingVisit?.packageId ?? '',
-      shopName,
-      packageTitle,
+      packageIds: selected.map((pkg) => pkg.id),
+      shopName: shopNames.length > 0 ? shopNames.join(' & ') : 'Unknown Shop',
+      packageTitles: selected.map((pkg) => pkg.title).sort(),
       visitedAt: values.visitedAt.toISOString(),
+      staff: values.staff,
       note: values.note,
     };
     if (editingVisit?.id) await updateVisit(editingVisit.id, payload);
@@ -124,7 +128,9 @@ export function PackagesPage({
                   <div className="split-row">
                     <div>
                       <strong>{pkg.title}</strong>
-                      <p>{pkg.shopName}</p>
+                      <p>
+                        {pkg.shopName} · {pkg.category ?? 'Beauty'}
+                      </p>
                       <small>{packageRemaining(pkg, visits)} of {pkg.totalSessions} remaining</small>
                     </div>
                     <strong>
@@ -150,8 +156,9 @@ export function PackagesPage({
                 .map((visit) => (
                   <Card className="record-card" key={visit.id} onClick={() => openVisitForm(visit)}>
                     <div>
-                      <strong>{visit.packageTitle}</strong>
+                      <strong>{(visit.packageTitles ?? []).join(', ') || 'Visit'}</strong>
                       <p>{new Date(visit.visitedAt).toLocaleString('en-MY')}</p>
+                      {visit.staff && <small>Staff: {visit.staff}</small>}
                       {visit.note && <small>{visit.note}</small>}
                     </div>
                   </Card>
@@ -165,11 +172,17 @@ export function PackagesPage({
           <Form.Item label="Shop Name" name="shopName" rules={[{ required: true }]}>
             <Input placeholder="Beauty Shop" />
           </Form.Item>
+          <Form.Item label="Category" name="category" rules={[{ required: true }]}>
+            <Select options={['Beauty', 'Gym', 'Medical', 'Car Wash', 'Other'].map((value) => ({ value, label: value }))} />
+          </Form.Item>
           <Form.Item label="Package Name" name="title" rules={[{ required: true }]}>
             <Input placeholder="Aqua Facial" />
           </Form.Item>
           <Form.Item label="Total Sessions" name="totalSessions" rules={[{ required: true }]}>
             <InputNumber min={1} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea placeholder="Optional" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block size="large">
             Save
@@ -184,14 +197,22 @@ export function PackagesPage({
 
       <Modal title={editingVisit?.id ? 'Edit Visit' : 'Add Visit'} open={!!editingVisit} onCancel={() => setEditingVisit(null)} footer={null} destroyOnClose>
         <Form form={visitForm} layout="vertical" onFinish={submitVisit}>
-          <Form.Item label="Shop Name" name="shopName" rules={[{ required: true }]}>
-            <Input placeholder="Beauty Shop" />
-          </Form.Item>
-          <Form.Item label="Package Name" name="packageTitle" rules={[{ required: true }]}>
-            <Input placeholder="Aqua Facial" />
+          <Form.Item label="Treatments" name="packageIds" rules={[{ required: true, type: 'array', min: 1 }]}>
+            <Select
+              mode="multiple"
+              placeholder="Select package treatments"
+              options={packages.map((pkg) => ({
+                value: pkg.id,
+                label: `${pkg.shopName} · ${pkg.title} (${packageRemaining(pkg, visits)} left)`,
+                disabled: packageRemaining(pkg, visits) === 0 && !(editingVisit?.packageIds ?? []).includes(pkg.id),
+              }))}
+            />
           </Form.Item>
           <Form.Item label="Visit Date & Time" name="visitedAt" rules={[{ required: true }]}>
             <DatePicker showTime style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Staff Member" name="staff">
+            <Input placeholder="Optional" />
           </Form.Item>
           <Form.Item label="Note" name="note">
             <Input.TextArea placeholder="Optional" />

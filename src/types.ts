@@ -11,6 +11,14 @@ export interface AssetRecord extends BaseRecord {
   name: string;
   category: string;
   amount: number;
+  ownership?: 'Personal' | 'Company';
+  notes?: string;
+  bankName?: string;
+  accountType?: 'Savings' | 'Current' | 'Fixed Deposit';
+  goldWeight?: number;
+  goldPurity?: '999' | '916' | '750' | 'Custom';
+  goldPurchasePrice?: number;
+  goldPurchaseDate?: string;
 }
 
 export interface RecurringItem {
@@ -20,6 +28,9 @@ export interface RecurringItem {
   totalInstallments: number;
   startInstallment: number;
   startMonth: string;
+  notes?: string;
+  isOngoing?: boolean;
+  isPaused?: boolean;
 }
 
 export interface CardRecord extends BaseRecord {
@@ -31,21 +42,27 @@ export interface CardRecord extends BaseRecord {
 export interface PlanRecord extends BaseRecord {
   name: string;
   category: string;
-  amount: number;
+  budget: number;
+  spent?: number;
+  status?: 'Planning' | 'Active' | 'Done' | 'Paused';
   targetDate?: string;
+  notes?: string;
 }
 
 export interface PackageRecord extends BaseRecord {
   shopName: string;
+  category?: 'Beauty' | 'Gym' | 'Medical' | 'Car Wash' | 'Other';
   title: string;
   totalSessions: number;
+  notes?: string;
 }
 
 export interface VisitRecord extends BaseRecord {
-  packageId: string;
+  packageIds: string[];
   shopName: string;
-  packageTitle: string;
+  packageTitles: string[];
   visitedAt: string;
+  staff?: string;
   note?: string;
 }
 
