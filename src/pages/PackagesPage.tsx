@@ -58,7 +58,9 @@ export function PackagesPage({
     return a.shopName.localeCompare(b.shopName) || a.title.localeCompare(b.title);
   });
   const packageGroups = groupByShop(sortedPackages);
-  const visitGroups = groupByShop(visits);
+  const visitGroups = groupByShop(
+    visits.slice().sort((a, b) => a.shopName.localeCompare(b.shopName) || b.visitedAt.localeCompare(a.visitedAt)),
+  );
 
   function openPackageForm(pkg?: PackageRecord) {
     setEditingPackage(pkg ?? ({ id: '', shopName: '', category: 'Beauty', title: '', totalSessions: 1, notes: '' } as PackageRecord));

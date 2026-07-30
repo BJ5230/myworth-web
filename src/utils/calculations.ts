@@ -81,12 +81,9 @@ export function packageRemaining(pkg: PackageRecord, visits: VisitRecord[]): num
 }
 
 export function groupByShop<T extends { shopName: string }>(items: T[]): Record<string, T[]> {
-  return items
-    .slice()
-    .sort((a, b) => a.shopName.localeCompare(b.shopName) || JSON.stringify(a).localeCompare(JSON.stringify(b)))
-    .reduce<Record<string, T[]>>((groups, item) => {
-      const shop = item.shopName || 'Unknown Shop';
-      groups[shop] = [...(groups[shop] ?? []), item];
-      return groups;
-    }, {});
+  return items.reduce<Record<string, T[]>>((groups, item) => {
+    const shop = item.shopName || 'Unknown Shop';
+    groups[shop] = [...(groups[shop] ?? []), item];
+    return groups;
+  }, {});
 }

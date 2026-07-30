@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardOutstanding, dashboardTotals, packageRemaining, recurringProgress } from './calculations';
+import { cardOutstanding, dashboardTotals, groupByShop, packageRemaining, recurringProgress } from './calculations';
 import type { CardRecord, PackageRecord, VisitRecord } from '../types';
 
 describe('MyWorth calculations', () => {
@@ -67,5 +67,16 @@ describe('MyWorth calculations', () => {
     ];
 
     expect(packageRemaining(pkg, visits)).toBe(12);
+  });
+
+  it('keeps package grouping in the order provided by the page sort', () => {
+    const packages: PackageRecord[] = [
+      { id: 'pkg-1', shopName: 'Beauty Shop', title: 'Low Remaining', totalSessions: 5 },
+      { id: 'pkg-2', shopName: 'Beauty Shop', title: 'High Remaining', totalSessions: 15 },
+    ];
+
+    const grouped = groupByShop(packages);
+
+    expect(grouped['Beauty Shop'].map((pkg) => pkg.title)).toEqual(['Low Remaining', 'High Remaining']);
   });
 });
