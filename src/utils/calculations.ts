@@ -29,9 +29,11 @@ export function isRecurringActive(item: RecurringItem, currentMonth = todayMonth
 }
 
 export function cardOutstanding(card: CardRecord, currentMonth = todayMonthKey()): number {
-  return card.recurringItems
-    .filter((item) => isRecurringActive(item, currentMonth))
-    .reduce((total, item) => total + item.monthlyAmount, 0);
+  return activeRecurringItems(card, currentMonth).reduce((total, item) => total + item.monthlyAmount, 0);
+}
+
+export function activeRecurringItems(card: CardRecord, currentMonth = todayMonthKey()): RecurringItem[] {
+  return card.recurringItems.filter((item) => isRecurringActive(item, currentMonth));
 }
 
 export function totalCardOutstanding(cards: CardRecord[], currentMonth = todayMonthKey()): number {

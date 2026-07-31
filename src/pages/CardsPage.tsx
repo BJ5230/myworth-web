@@ -1,10 +1,11 @@
 import { PlusOutlined, SortAscendingOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Tabs, Typography } from 'antd';
+import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Tabs, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { MoneyText } from '../components/MoneyText';
 import type { CardIssuer, CardRecord, RecurringItem } from '../types';
-import { cardOutstanding, recurringLeft, recurringProgress } from '../utils/calculations';
+import { activeRecurringItems, cardOutstanding, recurringLeft, recurringProgress } from '../utils/calculations';
 import { monthEndLabel, todayMonthKey, toNumber } from '../utils/format';
 import { makeId, toPascalWords } from '../utils/text';
 
@@ -33,6 +34,8 @@ const issuers: CardIssuer[] = ['Maybank', 'UOB'];
 export function CardsPage({ cards, valuesHidden, createCard, updateCard, deleteCard }: CardsPageProps) {
   const [issuer, setIssuer] = useState<CardIssuer>('Maybank');
   const [sort, setSort] = useState<'amount' | 'left'>('amount');
+  const [cardSort, setCardSort] = useState<'high' | 'low'>('high');
+  const [selectedMonth, setSelectedMonth] = useState(todayMonthKey());
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
   const [editingItem, setEditingItem] = useState<{ card: CardRecord; item?: RecurringItem } | null>(null);
   const [cardForm] = Form.useForm<CardFormValues>();
@@ -40,8 +43,13 @@ export function CardsPage({ cards, valuesHidden, createCard, updateCard, deleteC
 
   const visibleCards = cards
     .filter((card) => card.issuer === issuer)
-    .sort((a, b) => cardOutstanding(b) - cardOutstanding(a));
-  const total = visibleCards.reduce((sum, card) => sum + cardOutstanding(card), 0);
+    .sort((a, b) => {
+      const amountDiff = cardOutstanding(a, selectedMonth) - cardOutstanding(b, selectedMonth);
+      return cardSort === 'high' ? -amountDiff : amountDiff;
+    });
+  const total = visibleCards.reduce((sum, card) => sum + cardOutstanding(card, selectedMonth), 0);
+  const selectedMonthDate = dayjs(`${selectedMonth}-01`);
+  const selectedMonthEndLabel = monthEndLabel(selectedMonthDate.toDate());
 
   function openCardForm(card?: CardRecord) {
     setEditingCard(card ?? ({ id: '', issuer, title: issuer, recurringItems: [] } as CardRecord));
@@ -111,6 +119,25 @@ export function CardsPage({ cards, valuesHidden, createCard, updateCard, deleteC
         onChange={(key) => setIssuer(key as CardIssuer)}
       />
 
+      <div className="month-sort-controls">
+        <DatePicker
+          picker="month"
+          value={selectedMonthDate}
+          allowClear={false}
+          format="MMM YYYY"
+          onChange={(value) => value && setSelectedMonth(value.format('YYYY-MM'))}
+        />
+        <Select
+          value={cardSort}
+          suffixIcon={<SortAscendingOutlined />}
+          options={[
+            { value: 'high', label: 'High to Low' },
+            { value: 'low', label: 'Low to High' },
+          ]}
+          onChange={setCardSort}
+        />
+      </div>
+
       {visibleCards.length === 0 ? (
         <EmptyState title={`No ${issuer} Cards`} description="Tap + to create a card record." />
       ) : (
@@ -125,7 +152,7 @@ export function CardsPage({ cards, valuesHidden, createCard, updateCard, deleteC
               <div className="bank-card-bottom">
                 <span>Outstanding</span>
                 <strong>
-                  <MoneyText value={cardOutstanding(card)} hidden={valuesHidden} />
+                  <MoneyText value={cardOutstanding(card, selectedMonth)} hidden={valuesHidden} />
                 </strong>
               </div>
             </Card>
@@ -167,20 +194,19 @@ export function CardsPage({ cards, valuesHidden, createCard, updateCard, deleteC
                 <div className="split-row active-total">
                   <span>Active monthly total</span>
                   <strong>
-                    <MoneyText value={cardOutstanding(editingCard)} hidden={valuesHidden} />
+                    <MoneyText value={cardOutstanding(editingCard, selectedMonth)} hidden={valuesHidden} />
                   </strong>
                 </div>
-                {editingCard.recurringItems
-                  .slice()
-                  .sort((a, b) => (sort === 'amount' ? b.monthlyAmount - a.monthlyAmount : recurringLeft(a) - recurringLeft(b)))
+                {activeRecurringItems(editingCard, selectedMonth)
+                  .sort((a, b) => (sort === 'amount' ? b.monthlyAmount - a.monthlyAmount : recurringLeft(a, selectedMonth) - recurringLeft(b, selectedMonth)))
                   .map((item) => (
                     <button className="list-button" key={item.id} type="button" onClick={() => openItemForm(editingCard, item)}>
                       <span>
                         <strong>{item.purpose}</strong>
                         <small>
-                          {recurringProgress(item)}/{item.totalInstallments} · {recurringLeft(item)} left
+                          {recurringProgress(item, selectedMonth)}/{item.totalInstallments} · {recurringLeft(item, selectedMonth)} left
                         </small>
-                        <small>Next charge: {monthEndLabel()}</small>
+                        <small>Next charge: {selectedMonthEndLabel}</small>
                       </span>
                       <strong>
                         <MoneyText value={item.monthlyAmount} hidden={valuesHidden} />

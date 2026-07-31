@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardOutstanding, dashboardTotals, groupByShop, packageRemaining, recurringProgress } from './calculations';
+import { activeRecurringItems, cardOutstanding, dashboardTotals, groupByShop, packageRemaining, recurringProgress } from './calculations';
 import type { CardRecord, PackageRecord, VisitRecord } from '../types';
 
 describe('MyWorth calculations', () => {
@@ -23,6 +23,34 @@ describe('MyWorth calculations', () => {
     expect(recurringProgress(card.recurringItems[0], '2026-07')).toBe(12);
     expect(cardOutstanding(card, '2026-07')).toBe(150);
     expect(cardOutstanding(card, '2026-08')).toBe(0);
+  });
+
+  it('only returns recurring items active in the selected month', () => {
+    const card: CardRecord = {
+      id: 'card-1',
+      issuer: 'Maybank',
+      title: 'Maybank',
+      recurringItems: [
+        {
+          id: 'done-in-june',
+          purpose: 'Finished Plan',
+          monthlyAmount: 150,
+          totalInstallments: 12,
+          startInstallment: 12,
+          startMonth: '2026-06',
+        },
+        {
+          id: 'active-in-july',
+          purpose: 'Current Plan',
+          monthlyAmount: 200,
+          totalInstallments: 12,
+          startInstallment: 1,
+          startMonth: '2026-07',
+        },
+      ],
+    };
+
+    expect(activeRecurringItems(card, '2026-07').map((item) => item.id)).toEqual(['active-in-july']);
   });
 
   it('calculates dashboard totals from assets, cards, and plans', () => {

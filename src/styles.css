@@ -249,6 +249,18 @@ body {
   margin-bottom: 18px;
 }
 
+.month-sort-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+.month-sort-controls .ant-picker,
+.month-sort-controls .ant-select {
+  width: 100%;
+}
+
 .shop-banner {
   margin: 18px -18px 12px;
   padding: 14px 18px;
