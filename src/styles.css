@@ -196,6 +196,16 @@ body {
   box-shadow: var(--card-shadow);
 }
 
+.record-card.gradient-record {
+  color: #ffffff;
+  background: linear-gradient(120deg, #10c8d8 0%, #1870ea 78%, #2255e8 100%);
+}
+
+.record-card.gradient-record p,
+.record-card.gradient-record small {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 .record-card .ant-card-body,
 .plain-total-card .ant-card-body {
   padding: 22px;
@@ -329,4 +339,19 @@ body {
 [data-theme='dark'] .ant-card,
 [data-theme='dark'] .ant-modal-content {
   color: var(--app-text);
+}
+
+[data-theme='dark'] .simple-list {
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+}
+
+[data-theme='dark'] .active-total,
+[data-theme='dark'] .list-button {
+  border-color: var(--line);
+  color: var(--app-text);
+}
+
+[data-theme='dark'] .list-button small {
+  color: var(--soft-text);
 }

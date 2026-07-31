@@ -31,6 +31,7 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(themeStorageKey, themeMode);
+    document.documentElement.dataset.theme = themeMode;
   }, [themeMode]);
 
   const assets = useUserCollection<AssetRecord>(user?.uid, 'assets');
