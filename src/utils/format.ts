@@ -25,3 +25,31 @@ export function monthEndLabel(date = new Date()): string {
     year: 'numeric',
   });
 }
+
+export function normalizeVisitTime(value: string): string | null {
+  const trimmed = value.trim();
+  const compact = trimmed.replace(/\D/g, '');
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  const hourText = match ? match[1] : compact.length === 3 ? compact.slice(0, 1) : compact.slice(0, 2);
+  const minuteText = match ? match[2] : compact.slice(-2);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+export function formatVisitDateTime(value: string): string {
+  return new Date(value).toLocaleString('en-MY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kuala_Lumpur',
+  });
+}

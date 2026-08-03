@@ -6,7 +6,7 @@ import { EmptyState } from '../components/EmptyState';
 import type { PackageRecord, VisitRecord } from '../types';
 import { groupByShop, packageRemaining } from '../utils/calculations';
 import { toPascalWords } from '../utils/text';
-import { toNumber } from '../utils/format';
+import { formatVisitDateTime, normalizeVisitTime, toNumber } from '../utils/format';
 
 interface PackagesPageProps {
   packages: PackageRecord[];
@@ -111,7 +111,8 @@ export function PackagesPage({
       .filter((usage) => usage.quantity > 0);
     const selected = packages.filter((pkg) => usages.some((usage) => usage.packageId === pkg.id));
     const shopNames = Array.from(new Set(selected.map((pkg) => pkg.shopName))).sort();
-    const [hour, minute] = (values.visitTime || '00:00').split(':').map(Number);
+    const normalizedVisitTime = normalizeVisitTime(values.visitTime) ?? '00:00';
+    const [hour, minute] = normalizedVisitTime.split(':').map(Number);
     const selectedAt = values.visitDate
       .hour(Number.isFinite(hour) ? hour : 0)
       .minute(Number.isFinite(minute) ? minute : 0)
@@ -211,7 +212,7 @@ export function PackagesPage({
                   <Card className="record-card" key={visit.id} onClick={() => openVisitForm(visit)}>
                     <div>
                       <strong>{(visit.packageTitles ?? []).join(', ') || 'Visit'}</strong>
-                      <p>{new Date(visit.visitedAt).toLocaleString('en-MY')}</p>
+                      <p>{formatVisitDateTime(visit.visitedAt)}</p>
                       {visit.staff && <small>Staff: {visit.staff}</small>}
                       {visit.note && <small>{visit.note}</small>}
                     </div>
@@ -274,10 +275,20 @@ export function PackagesPage({
               name="visitTime"
               rules={[
                 { required: true },
-                { pattern: /^([01]\d|2[0-3]):[0-5]\d$/, message: 'Use 24-hour time, eg 14:30' },
+                {
+                  validator: (_, value) =>
+                    normalizeVisitTime(value ?? '') ? Promise.resolve() : Promise.reject(new Error('Use 24-hour time, eg 1430 or 14:30')),
+                },
               ]}
             >
-              <Input placeholder="14:30" inputMode="numeric" />
+              <Input
+                placeholder="1430"
+                inputMode="numeric"
+                onBlur={() => {
+                  const normalized = normalizeVisitTime(visitForm.getFieldValue('visitTime') ?? '');
+                  if (normalized) visitForm.setFieldValue('visitTime', normalized);
+                }}
+              />
             </Form.Item>
           </div>
           <Form.Item label="Staff Member" name="staff">
